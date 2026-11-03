@@ -1,0 +1,60 @@
+{
+  "versions": [
+    {
+      "id": "v1",
+      "items": [
+        [
+          "motor",
+          "motor.txt",
+          "b3d1df7429ec8ce86db3f810a11ae19927a0bfa1ce0e00c702c10cb412a75ade"
+        ],
+        [
+          "pump",
+          "pump.txt",
+          "a36c886e5c4817a72f3897929b557b5896fba5e5d5b292cc0498216b08338042"
+        ]
+      ]
+    },
+    {
+      "id": "v2",
+      "items": [
+        [
+          "motor",
+          "motor.txt",
+          "b3d1df7429ec8ce86db3f810a11ae19927a0bfa1ce0e00c702c10cb412a75ade"
+        ],
+        [
+          "pump",
+          "missing.txt",
+          "a36c886e5c4817a72f3897929b557b5896fba5e5d5b292cc0498216b08338042"
+        ]
+      ]
+    }
+  ],
+  "events": [
+    [
+      0,
+      "motor"
+    ],
+    [
+      100,
+      "motor"
+    ],
+    [
+      250,
+      "motor"
+    ],
+    [
+      300,
+      "ghost"
+    ],
+    [
+      200,
+      "pump"
+    ],
+    [
+      400,
+      "pump"
+    ]
+  ]
+}
