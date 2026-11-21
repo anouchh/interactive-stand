@@ -31,30 +31,23 @@
       ]
     }
   ],
-  "events": [
-    [
-      0,
-      "motor"
-    ],
-    [
-      100,
-      "motor"
-    ],
-    [
-      250,
-      "motor"
-    ],
-    [
-      300,
-      "ghost"
-    ],
-    [
-      200,
-      "pump"
-    ],
-    [
-      400,
-      "pump"
-    ]
+  "decisions": [
+    {
+      "protocol": "P1",
+      "version": "v1",
+      "result": "accepted"
+    },
+    {
+      "protocol": "P2",
+      "version": "v2",
+      "result": "returned",
+      "defect": "D1"
+    }
+  ],
+  "sessions": [
+    {
+      "id": "S1",
+      "protocol": "P1"
+    }
   ]
 }

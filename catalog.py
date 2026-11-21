@@ -1,4 +1,5 @@
 """Проверка комплектации и анализ журнала одного сеанса принятой версии."""
+import csv
 import hashlib
 import json
 from pathlib import Path
@@ -48,15 +49,62 @@ def summarize(index, events, interval=250):
     return counts, rejected
 
 
-def main():
-    root = Path(__file__).resolve().parent / "example"
-    data = json.loads((root / "case.json").read_text(encoding="utf-8"))
+def admitted_sessions(root, data):
+    packages = {}
     for version in data["versions"]:
         index, errors = inspect_package(root, version["items"])
         print(version["id"], "errors", errors)
-        if not errors:
-            counts, rejected = summarize(index, data["events"])
-            print("counts", counts, "rejected", rejected)
+        if version["id"] in packages:
+            raise ValueError("duplicate_version")
+        packages[version["id"]] = index
+    decisions = {row["protocol"]: row for row in data["decisions"]}
+    if len(decisions) != len(data["decisions"]):
+        raise ValueError("duplicate_protocol")
+    sessions = {}
+    for session in data["sessions"]:
+        decision = decisions[session["protocol"]]
+        version = decision["version"]
+        if decision["result"] != "accepted" or not packages[version]:
+            raise ValueError("not_admitted")
+        if session["id"] in sessions:
+            raise ValueError("duplicate_session")
+        sessions[session["id"]] = (version, packages[version])
+    return sessions
+
+
+def analyze_log(sessions, session_id, rows):
+    version, index = sessions[session_id]
+    events = []
+    for row in rows:
+        if row["session"] != session_id or row["version"] != version:
+            raise ValueError("binding")
+        try:
+            at = int(row["time_ms"])
+        except ValueError:
+            at = None
+        events.append((at, row["zone"]))
+    return summarize(index, events)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--export", type=Path)
+    parser.add_argument("--log", type=Path)
+    parser.add_argument("--session", default="S1")
+    args = parser.parse_args()
+    root = Path(__file__).resolve().parent / "example"
+    data = json.loads((root / "case.json").read_text(encoding="utf-8"))
+    sessions = admitted_sessions(root, data)
+    with (args.log or root / "events.tsv").open(encoding="utf-8", newline="") as stream:
+        counts, rejected = analyze_log(sessions, args.session, csv.DictReader(stream, delimiter="\t"))
+    print("counts", counts, "rejected", rejected)
+    if args.export:
+        with args.export.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.writer(stream, delimiter="\t", lineterminator="\n")
+            writer.writerow(["session", "version", "zone"])
+            for key, (version, index) in sessions.items():
+                writer.writerows((key, version, zone) for zone in index)
 
 
 if __name__ == "__main__":
