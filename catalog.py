@@ -72,16 +72,25 @@ def admitted_sessions(root, data):
     return sessions
 
 
+def read_events(stream):
+    fields = ["session", "version", "time_ms", "zone"]
+    if next(stream, "").rstrip("\r\n").split("\t") != fields:
+        raise ValueError("header")
+    for line_number, line in enumerate(stream, 2):
+        values = line.rstrip("\r\n").split("\t")
+        if len(values) != len(fields):
+            raise ValueError(f"line {line_number}: expected {len(fields)} columns, got {len(values)}")
+        yield dict(zip(fields, values))
+
+
 def analyze_log(sessions, session_id, rows):
     version, index = sessions[session_id]
     events = []
     for row in rows:
         if row["session"] != session_id or row["version"] != version:
             raise ValueError("binding")
-        try:
-            at = int(row["time_ms"])
-        except ValueError:
-            at = None
+        value = row["time_ms"]
+        at = int(value) if value.isascii() and value.isdecimal() else None
         events.append((at, row["zone"]))
     return summarize(index, events)
 
@@ -97,7 +106,7 @@ def main():
     data = json.loads((root / "case.json").read_text(encoding="utf-8"))
     sessions = admitted_sessions(root, data)
     with (args.log or root / "events.tsv").open(encoding="utf-8", newline="") as stream:
-        counts, rejected = analyze_log(sessions, args.session, csv.DictReader(stream, delimiter="\t"))
+        counts, rejected = analyze_log(sessions, args.session, read_events(stream))
     print("counts", counts, "rejected", rejected)
     if args.export:
         with args.export.open("w", encoding="utf-8", newline="") as stream:

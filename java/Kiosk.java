@@ -45,14 +45,12 @@ public class Kiosk {
             if (!session.id().equals(touch.session()) || !session.version().equals(touch.version()))
                 throw new IllegalArgumentException("binding");
             number++;
-            BigInteger at;
-            try {
-                at = new BigInteger(touch.time().trim());
-            } catch (NumberFormatException ex) {
+            if (touch.time().isEmpty() || !touch.time().chars().allMatch(c -> c >= '0' && c <= '9')) {
                 rejected.add(new Rejection(number, "time"));
                 return;
             }
-            if (at.signum() < 0 || at.compareTo(previous) < 0) {
+            BigInteger at = new BigInteger(touch.time());
+            if (at.compareTo(previous) < 0) {
                 rejected.add(new Rejection(number, "time"));
                 return;
             }
@@ -81,9 +79,11 @@ public class Kiosk {
             throw new IllegalArgumentException("header");
         int width = header.split("\t").length;
         List<String[]> rows = new ArrayList<>();
-        for (String line : lines.subList(1, lines.size())) {
+        for (int i = 1; i < lines.size(); i++) {
+            String line = lines.get(i);
             String[] row = line.split("\t", -1);
-            if (row.length != width) throw new IllegalArgumentException("columns");
+            if (row.length != width) throw new IllegalArgumentException(
+                    "line " + (i + 1) + ": expected " + width + " columns, got " + row.length);
             rows.add(row);
         }
         return rows;
